@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan AI - Calorie Analysis</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #111; margin: 0; padding: 20px; }
+        .wrap { max-width: 760px; margin: 18px auto; background: #fff; padding: 22px; border-radius: 10px; box-shadow: 0 6px 20px rgba(20, 30, 60, 0.08); }
+        h1 { margin-top: 0; font-size: 24px; }
+        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .col { flex: 1 1 240px; min-width: 240px; }
+        input[type=file] { display: block; margin-top: 8px; }
+        #preview { width: 100%; max-height: 320px; object-fit: cover; border-radius: 8px; margin-top: 12px; }
+        button { background: #4f46e5; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        .result { margin-top: 16px; background: #f8fafc; padding: 14px; border-radius: 8px; }
+        .badge { display: inline-block; background: #eef2ff; color: #4338ca; padding: 4px 8px; border-radius: 999px; font-weight: 600; margin-right: 8px; }
+        select { margin-bottom: 15px; padding: 6px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div style="text-align:right">
+        <label for="langSelect"><strong>Language</strong>:</label>
+        <select id="langSelect">
+            <option value="en">English</option>
+        </select>
+    </div>
+
+    <h1 id="title">NutriScan AI - Calorie Analysis</h1>
+    <p id="desc">Upload a picture of your meal, and we'll identify it and fetch calories & nutrients from USDA.</p>
+
+    <div class="row">
+        <div class="col">
+            <label id="chooseLabel"><strong>Choose an image</strong></label>
+            <input type="file" id="imageInput" accept="image/*">
+            <img id="preview" src="" alt="" style="display:none">
+            <button id="analyzeBtn" disabled>Analyze Image</button>
+        </div>
+
+        <div class="col">
+            <div id="status" style="min-height:34px;color:#374151"></div>
+            <div id="clarifaiOutput" class="result" style="display:none"></div>
+            <div id="usdaOutput" class="result" style="display:none"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Placeholder translations for Shopify/GitHub (English only)
+const translations = {
+    en: {
+        title: "NutriScan AI - Calorie Analysis",
+        desc: "Upload a picture of your meal, and we'll identify it and fetch calories & nutrients from USDA.",
+        chooseLabel: "Choose an image",
+        analyzeBtn: "Analyze Image",
+        step1: "Sending image to AI recognition service...",
+        step2: name => `Searching USDA for: ${name}`,
+        noFood: "No recognizable food found. Try a clearer image.",
+        clarifaiTitle: "Recognition Results",
+        usdaTitle: name => `USDA Nutritional Results for \"${name}\"`,
+        noUSDA: "No results found in USDA database."
+    }
+};
+
+const langSelect = document.getElementById('langSelect');
+const titleEl = document.getElementById('title');
+const descEl = document.getElementById('desc');
+const chooseLabelEl = document.getElementById('chooseLabel');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const statusDiv = document.getElementById('status');
+const clarifaiOutput = document.getElementById('clarifaiOutput');
+const usdaOutput = document.getElementById('usdaOutput');
+const imageInput = document.getElementById('imageInput');
+const preview = document.getElementById('preview');
+
+let currentLang = 'en';
+let selectedFile = null;
+
+function updateLanguage(lang) {
+    currentLang = lang;
+    const t = translations[lang];
+    titleEl.textContent = t.title;
+    descEl.textContent = t.desc;
+    chooseLabelEl.innerHTML = `<strong>${t.chooseLabel}</strong>`;
+    analyzeBtn.textContent = t.analyzeBtn;
+}
+langSelect.addEventListener('change', e => updateLanguage(e.target.value));
+
+imageInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedFile = file;
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+    analyzeBtn.disabled = false;
+    clarifaiOutput.style.display = 'none';
+    usdaOutput.style.display = 'none';
+    statusDiv.innerText = '';
+});
+
+analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    analyzeBtn.disabled = true;
+    const t = translations[currentLang];
+    statusDiv.innerHTML = `<span class="badge">1</span> ${t.step1}`;
+    try {
+        // Example simulation for Shopify/GitHub (No API call)
+        setTimeout(() => {
+            const fakeFood = "Pizza";
+            showClarifai([{name: fakeFood, value: 0.95}]);
+            statusDiv.innerHTML = `<span class="badge">2</span> ${t.step2(fakeFood)}`;
+            showUSDA(fakeFood);
+            analyzeBtn.disabled = false;
+        }, 1500);
+    } catch (err) {
+        console.error(err);
+        statusDiv.innerText = "Error: " + err.message;
+        analyzeBtn.disabled = false;
+    }
+});
+
+function showClarifai(concepts) {
+    clarifaiOutput.style.display = 'block';
+    const t = translations[currentLang];
+    let html = `<h3>${t.clarifaiTitle}</h3>`;
+    if (!concepts.length) {
+        html += "<p>No results.</p>";
+    } else {
+        html += "<ul>";
+        concepts.slice(0,5).forEach(c => {
+            html += `<li>${c.name} — ${(c.value*100).toFixed(1)}%</li>`;
+        });
+        html += "</ul>";
+    }
+    clarifaiOutput.innerHTML = html;
+}
+
+function showUSDA(name) {
+    usdaOutput.style.display = 'block';
+    const t = translations[currentLang];
+    let html = `<h3>${t.usdaTitle(name)}</h3>`;
+    html += `<div style="margin-bottom:10px;padding:8px;background:#fff;border-radius:6px">
+        <strong>${name}</strong><br>
+        Calories: 266 kcal | Protein: 11 g | Carbs: 33 g | Fat: 10 g
+    </div>`;
+    usdaOutput.innerHTML = html;
+}
+
+updateLanguage('en');
+</script>
+</body>
+</html>
